@@ -2,7 +2,11 @@ from flask import Blueprint, render_template, redirect, url_for, request, jsonif
 from ..models import dkb_visa, dkb_konto, KATEGORIEN, kategorie_schlagwoerter
 from .. import db
 from sqlalchemy import func
-from ..utils import get_paginated_data, get_paginated_visa_data, get_unique_non_categorized_data, get_all_categories, get_expenses_summarized_by_category
+from ..utils import get_paginated_data, \
+                    get_paginated_visa_data, \
+                    get_unique_non_categorized_data, \
+                    get_all_categories, \
+                    get_expenses_summarized_by_category
 
 data_bp = Blueprint('data', __name__)
 charts_bp = Blueprint('charts', __name__)
@@ -135,6 +139,33 @@ def view_chart():
         labels = [expense[0] for expense in summarized_expenses]
         data = [expense[1] for expense in summarized_expenses]
         
-        return jsonify({'labels': labels, 'data': data})
+        # Prepare data for monthly expenses per category
+        monthly_expenses = {}
+        categories = get_all_categories()  # Assuming you have a function to fetch all categories
+        for category in categories:
+            category_expenses = db.session.query(
+                func.strftime('%Y-%m', dkb_visa.Belegdatum).label('month'),
+                func.sum(dkb_visa.Betrag).label('total_amount')
+            ).join(
+                KATEGORIEN, dkb_visa.Kategorie_id == KATEGORIEN.id
+            ).filter(
+                KATEGORIEN.id == category.id,
+                dkb_visa.Belegdatum.between(start_date, end_date)
+            ).group_by(
+                func.strftime('%Y-%m', dkb_visa.Belegdatum)
+            ).all()
+            
+            if category_expenses != []:
+                monthly_expenses[category.Kategorie_name] = category_expenses
+
+                monthly_expenses[category.Kategorie_name] = [
+                        {'month': expense.month, 'total_amount': expense.total_amount}
+                        for expense in category_expenses
+                    ]
+        
+        return jsonify({
+            'pie_chart': {'labels': labels, 'data': data},
+            'monthly_expenses': monthly_expenses
+        })
 
     return render_template('charts.html')
