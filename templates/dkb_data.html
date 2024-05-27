@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>DKB Data</h1>
+<table  class="table table-dark">
+    {% if active_tab == 'dkb_visa' %}
+    <thead>
+        <tr>
+            <th class="text-primary">Visa Kartennummer</th>
+            <th class="text-primary">Visa Karteninhaber</th>
+            <th class="text-primary">Belegdatum</th>
+            <th class="text-primary">Wertstellung</th>
+            <th class="text-primary">Beschreibung</th>
+            <th class="text-primary">Umsatztyp</th>
+            <th class="text-primary">Betrag</th>
+            <th class="text-primary">Fremdwährungsbetrag</th>
+            <th class="text-primary">Kategorie</th>
+            </tr>
+    </thead>
+    <tbody>
+        {% for row in dkb_visa_data %}  <tr>
+            <td>{{ row.Visa_Kartennummer }}</td>
+            <td>{{ row.Visa_Karteninhaber }}</td>
+            <td>{{ row.Belegdatum }}</td>
+            <td>{{ row.Wertstellung }}</td>
+            <td>{{ row.Beschreibung }}</td>
+            <td>{{ row.Umsatztyp }}</td>
+            <td>{{ row.Betrag }}</td>
+            <td>{{ row.Fremdwährungsbetrag }}</td>
+            <td>{{ row.Kategorie_name }}</td>
+            </tr>
+        {% endfor %}
+    {% endif %}    
+    {% if active_tab == 'dkb_konto' %}
+    <thead>
+        <tr>
+            <th>Kontonummer</th>
+            <th>Kontoinhaber</th>
+            <th>Buchungsdatum</th>
+            <th>Wertstellung</th>
+            <th>Zahlungspflichtiger</th>
+            <th>Zahlungsempfänger</th>
+            <th>Verwendungszweck</th>
+            <th>Umsatztyp</th>
+            <th>IBAN</th>
+            <th>Betrag</th>
+            <th>Gläubiger_ID</th>
+            <th>Mandatsreferenz</th>
+            <th>Kundenreferenz</th>
+            <th>Kategorie_id</th>
+            </tr>
+    </thead>
+    <tbody>
+        {% for row in dkb_konto_data %}  <tr>
+            <td>{{ row.Kontonummer }}</td>
+            <td>{{ row.Kontoinhaber }}</td>
+            <td>{{ row.Buchungsdatum }}</td>
+            <td>{{ row.Wertstellung }}</td>
+            <td>{{ row.Zahlungspflichtiger }}</td>
+            <td>{{ row.Zahlungsempfänger }}</td>
+            <td>{{ row.Verwendungszweck }}</td>
+            <td>{{ row.Umsatztyp }}</td>
+            <td>{{ row.IBAN }}</td>
+            <td>{{ row.Betrag }}</td>
+            <td>{{ row.Gläubiger_ID }}</td>
+            <td>{{ row.Mandatsreferenz }}</td>
+            <td>{{ row.Kundenreferenz }}</td>
+            <td>{{ row.Kategorie_id }}</td>
+            </tr>
+        {% endfor %}
+    {% endif %}
+    </tbody>
+</table>
+
+<div id="load-more-container">
+    <button id="load-more" class="btn btn-primary" onclick="loadMoreData()">Load More</button>
+</div>
+
+<h1>Upload Data</h1>
+
+<form action="{{ url_for('upload_data') }}" method="POST" enctype="multipart/form-data">
+    <select name="table_name" class="form-select">
+        <option value="dkb_visa">DKB-VISA</option>
+        <option value="dkb_konto">DKB-Konto</option>
+    </select>
+    <input type="file" name="data_file" accept=".csv" class="form-control">
+    <button type="submit" class="btn btn-success">Upload</button>
+</form>
+
+<script>
+function loadMoreData() {
+    // Implement JavaScript logic to fetch more data using AJAX
+    // Use the offset value from the button or a hidden field to determine the next data chunk
+    // Update the table with the new data and adjust the button visibility or offset value
+}
+</script>
+
+{% endblock %}

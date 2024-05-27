@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>Hi categorize!</h1>
+<button id="applyCategoriesBtn" class="btn btn-primary">Apply Categories to Descriptions</button>
+<table class="table table-dark">
+  <thead>
+        <tr>
+          <th class="text-primary">Visa Kartennummer</th>
+          <th class="text-primary">Visa Karteninhaber</th>
+          <th class="text-primary">Betrag</th>
+          <th class="text-primary">Umsatztyp</th>
+          <th class="text-primary">Beschreibung</th>
+          <th class="text-primary">Schlagwort</th>
+          <th class="text-primary">Kategorie</th>
+        </tr>
+  </thead>
+  <tbody>
+    {% for row in unique_data %}  
+    <tr>
+        <td>{{ row.Visa_Kartennummer }}</td>
+        <td>{{ row.Visa_Karteninhaber }}</td>
+        <td>{{ row.Beschreibung }}</td>
+        <td>{{ row.Umsatztyp }}</td>
+        <td>{{ row.Betrag }}</td>
+        <form id="selectCategory" action="{{ url_for('update_category') }}" method="post" class="form-inline">
+            <input type="hidden" name="entry_id" value="{{ row.id }}">
+            <td>
+                <input name="category_keyword" class="form-control" value="{{ row.Beschreibung }}" style="flex: 1;">
+            </td>
+            <td>
+                <div class="d-flex">
+                    <select class="form-control me-2" name="category" style="max-width: 150px;">
+                        {% for category in categories %}
+                            <option value="{{ category.id }}" {% if category.id==1%} selected="selected" {%endif%}>{{ category.Kategorie_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-primary me-2">Zuweisen</button>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal">Neue Kategorie</button>
+                </div>
+            </td>
+        </form>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addCategoryModalLabel">Neue Kategorie hinzufügen</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="categoryForm">
+            <div class="mb-3">
+              <label for="categoryName" id="categoryNameLabel" class="form-label">Kategoriename</label>
+              <input type="text" class="form-control" id="categoryName" name="categoryName" required>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Schließen</button>
+          <button type="submit" form="categoryForm" class="btn btn-primary">Hinzufügen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    $(document).ready(function() {
+        $("#categoryForm").submit(function(event) {
+            event.preventDefault();
+    
+            var categoryName = $("#categoryName").val();
+    
+            // Check if category already exists before sending AJAX request
+            $.ajax({
+                url: "/check_category",
+                type: "POST",
+                data: { categoryName: categoryName },
+                success: function(response) {
+                    console.log("Check category response:", response);  // Logging the response
+                    if (response.exists) {
+                        // Category already exists, show error message
+                        $("#error-message").text("Kategoriename existiert bereits!").removeClass("d-none");
+                        $("#categoryNameLabel").css("color", "red").text("Kategoriename existiert bereits!");
+                    } else {
+                        // Send AJAX request to add category (original logic)
+                        $.ajax({
+                            url: "/add_new_category",
+                            type: "POST",
+                            data: $("#categoryForm").serialize(),
+                            success: function(response) {
+                                console.log("Add category response:", response);  // Logging the response
+                                $("#addCategoryModal").modal('hide');
+                                // Refresh the page after successful addition
+                                window.location.reload();
+                            },
+                            error: function(jqXHR, textStatus, errorThrown) {
+                                console.error("Error adding category:", textStatus, errorThrown);
+                                // Handle errors appropriately
+                            }
+                        });
+                    }
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    console.error("Error checking category:", textStatus, errorThrown);
+                    // Handle errors appropriately (e.g., display a generic error message)
+                }
+            });
+        });
+    });
+
+    $(document).ready(function() {
+        // Handle click event for the button
+        $("#applyCategoriesBtn").click(function() {
+            // Make an AJAX request to the Flask route
+            $.ajax({
+                url: "/apply_category_to_descriptions", // URL of the Flask route
+                type: "GET", // HTTP method
+                success: function(response) {
+                    // Handle success response
+                    console.log("Categories applied successfully:", response);
+                    // Optionally, display a message to the user
+                    alert("Categories applied successfully!");
+                    window.location.reload();
+                },
+                error: function(jqXHR, textStatus, errorThrown) {
+                    // Handle error response
+                    console.error("Error applying categories:", textStatus, errorThrown);
+                    // Optionally, display an error message to the user
+                    alert("Error applying categories. Please try again later.");
+                }
+            });
+        });
+    });
+
+    $(document).ready(function() {
+        $('#addCategoryModal').on('shown.bs.modal', function () {
+            $('#categoryName').focus(); // Set focus to the text input
+        });
+    });
+  </script>
+{% endblock %}
