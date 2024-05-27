@@ -24,7 +24,7 @@
         <td>{{ row.Beschreibung }}</td>
         <td>{{ row.Umsatztyp }}</td>
         <td>{{ row.Betrag }}</td>
-        <form id="selectCategory" action="{{ url_for('update_category') }}" method="post" class="form-inline">
+        <form id="selectCategory" action="{{ url_for('data.update_category') }}" method="post" class="form-inline">
             <input type="hidden" name="entry_id" value="{{ row.id }}">
             <td>
                 <input name="category_keyword" class="form-control" value="{{ row.Beschreibung }}" style="flex: 1;">

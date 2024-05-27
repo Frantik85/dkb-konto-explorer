@@ -38,13 +38,13 @@
               <ul class="navbar-nav mr-auto">
                 
                 <li  class="nav-item" {% if active_tab == 'dkb_visa' %} class="nav-item active"{% endif %}>
-                    <a class="nav-link" href="{{ url_for('switch_tab', tab_name='dkb_visa') }}">DKB-VISA</a>
+                    <a class="nav-link" href="{{ url_for('data.switch_tab', tab_name='dkb_visa') }}">DKB-VISA</a>
                 </li>
                 <li  class="nav-item" {% if active_tab == 'dkb_visa_categorize' %} class="nav-item active"{% endif %}>
-                    <a class="nav-link" href="{{ url_for('switch_tab', tab_name='dkb_visa_categorize') }}">DKB-VISA kategorisieren</a>
+                    <a class="nav-link" href="{{ url_for('data.switch_tab', tab_name='dkb_visa_categorize') }}">DKB-VISA kategorisieren</a>
                 </li>
                 <li class="nav-item" {% if active_tab == 'dkb_visa' %}class="nav-item active"{% endif %}>
-                  <a class="nav-link" href="{{ url_for('switch_tab', tab_name='dkb_konto') }}">DKB-Konto</a>
+                  <a class="nav-link" href="{{ url_for('data.switch_tab', tab_name='dkb_konto') }}">DKB-Konto</a>
                 </li>
               </ul>
             </div>
