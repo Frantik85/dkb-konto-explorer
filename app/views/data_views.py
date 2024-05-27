@@ -169,3 +169,14 @@ def view_chart():
         })
 
     return render_template('charts.html')
+
+
+@charts_bp.route('/max_date_range', methods=['GET'])
+def get_max_date_range():
+    max_date = db.session.query(func.max(dkb_visa.Belegdatum)).scalar()
+    min_date = db.session.query(func.min(dkb_visa.Belegdatum)).scalar()
+    
+    if max_date and min_date:
+        return jsonify({'min_date': min_date, 'max_date': max_date})
+    else:
+        return jsonify({'error': 'No data available'}), 404

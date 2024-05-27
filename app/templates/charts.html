@@ -14,14 +14,15 @@
                 <label for="end_date">End Date:</label>
                 <input class="form-control" type="date" id="end_date" name="end_date" required>
                 <button type="submit" class="btn btn-primary">View Chart</button>
+                <button id="showMaxDateRangeData" type="submit" class="btn btn-primary">Show max date range</button>
             </div>
         </form>
-        <button id="showMaxDateRangeData" type="submit" class="btn btn-primary">Show max date range</button>
+        
     </div>
 
     <div class="row">
         <div class="col-lg">
-            <canvas id="myPieChart" width="400" height="400"></canvas>
+            <canvas id="myPieChart" width="500" height="500"></canvas>
         </div>
 
         <div class="col-lg">
@@ -36,8 +37,8 @@
         let lineChartInstance = null;
 
         // Set default dates
-        const startDateInput = document.getElementById('start_date');
-        const endDateInput = document.getElementById('end_date');
+        startDateInput = document.getElementById('start_date');
+        endDateInput = document.getElementById('end_date');
 
         const today = new Date();
         const currentDate = today.toISOString().split('T')[0];
@@ -148,28 +149,23 @@
         });
     });
 
-    $(document).ready(function() {
-        // Handle click event for the button
-        $("#showMaxDateRangeData").click(function() {
-            // Make an AJAX request to the Flask route
-            $.ajax({
-                url: "/apply_category_to_descriptions", // URL of the Flask route
-                type: "GET", // HTTP method
-                success: function(response) {
-                    // Handle success response
-                    console.log("Categories applied successfully:", response);
-                    // Optionally, display a message to the user
-                    alert("Categories applied successfully!");
-                    window.location.reload();
-                },
-                error: function(jqXHR, textStatus, errorThrown) {
-                    // Handle error response
-                    console.error("Error applying categories:", textStatus, errorThrown);
-                    // Optionally, display an error message to the user
-                    alert("Error applying categories. Please try again later.");
+    document.getElementById('showMaxDateRangeData').addEventListener('click', function() {
+        fetch('/max_date_range')
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    console.error(data.error);
+                } else {
+                    console.log("min date" + data.min_date)
+                    console.log("max date" + data.max_date)
+                    startDateInput.value = data.min_date;
+                    endDateInput.value = data.max_date;
+
+                    // Trigger form submission to fetch and display data for the max date range
+                    document.getElementById('dateRangeForm').dispatchEvent(new Event('submit'));
                 }
-            });
-        });
+            })
+            .catch(error => console.error('Error:', error));
     });
 </script>
 {% endblock %}
