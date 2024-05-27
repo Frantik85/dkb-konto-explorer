@@ -2,21 +2,10 @@ from flask import Blueprint, render_template, redirect, url_for, request, jsonif
 from ..models import dkb_visa, dkb_konto, KATEGORIEN, kategorie_schlagwoerter
 from .. import db
 from sqlalchemy import func
-from ..utils import get_paginated_data, get_paginated_visa_data, get_unique_non_categorized_data, get_all_categories
+from ..utils import get_paginated_data, get_paginated_visa_data, get_unique_non_categorized_data, get_all_categories, get_expenses_summarized_by_category
 
 data_bp = Blueprint('data', __name__)
-
-
-@data_bp.route('/dkb_data/<table_name>/<int:offset>')
-def load_more_data(table_name, offset):
-    if table_name == 'dkb_visa':
-        table_class = dkb_visa
-    elif table_name == 'dkb_konto':
-        table_class = dkb_konto
-    else:
-        return redirect(url_for('main.index'))
-    data = get_paginated_data(table_class, offset)
-    return render_template('data_snippet.html', data=data)
+charts_bp = Blueprint('charts', __name__)
 
 
 @data_bp.route('/switch_tab/<string:tab_name>')
@@ -32,6 +21,8 @@ def switch_tab(tab_name):
         unique_data = get_unique_non_categorized_data(20)
         categories = get_all_categories()
         return render_template('dkb_visa_categorize.html', unique_data=unique_data, categories=categories, active_tab=active_tab)
+    elif tab_name == 'charts':
+        return render_template('charts.html')
     else:
         return redirect(url_for('main.index'))
 
@@ -46,6 +37,7 @@ def upload_data():
         pass
     return render_template('upload.html')
 
+
 def update_categories(category_id: int, keyword: str):
     try:
         entries_to_label = dkb_visa.query.filter(func.lower(dkb_visa.Beschreibung).like('%' + keyword + '%')).all()
@@ -57,6 +49,7 @@ def update_categories(category_id: int, keyword: str):
     except Exception as e:
         db.session.rollback()
         print(f"Error when changing categories for dkb_visa entries: {e}")
+
 
 @data_bp.route('/update_category', methods=['POST'])
 def update_category():
@@ -82,6 +75,7 @@ def update_category():
 
     return redirect(request.referrer)
 
+
 @data_bp.route("/check_category", methods=["POST"])
 def check_category():
     category_name = request.form.get("categoryName")
@@ -92,6 +86,7 @@ def check_category():
     category = KATEGORIEN.query.filter_by(Kategorie_name=category_name).first()
 
     return jsonify({"exists": category is not None})
+
 
 @data_bp.route('/add_new_category', methods=['POST'])
 def add_new_category():
@@ -110,6 +105,7 @@ def add_new_category():
     else:
         return jsonify({"error": "Category name is required."}), 400
 
+
 @data_bp.route('/apply_category_to_descriptions', methods=['GET'])
 def apply_category_to_descriptions():
     schlagwoerter = kategorie_schlagwoerter.query.all()
@@ -123,3 +119,22 @@ def apply_category_to_descriptions():
     db.session.commit()
 
     return "Categories applied to descriptions successfully."
+
+
+@charts_bp.route('/charts', methods=['GET', 'POST'])
+def view_chart():
+    if request.method == 'POST':
+        data = request.get_json()
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        
+        # Query to summarize expenses within the date range
+        summarized_expenses = get_expenses_summarized_by_category(start_date, end_date)
+        
+        # Prepare data for Chart.js
+        labels = [expense[0] for expense in summarized_expenses]
+        data = [expense[1] for expense in summarized_expenses]
+        
+        return jsonify({'labels': labels, 'data': data})
+
+    return render_template('charts.html')

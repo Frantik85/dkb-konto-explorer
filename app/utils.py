@@ -3,6 +3,20 @@ from . import db
 from sqlalchemy import func
 
 
+def get_expenses_summarized_by_category(start_date, end_date):
+    data = db.session.query(
+        KATEGORIEN.Kategorie_name,
+        func.sum(dkb_visa.Betrag).label('total_amount')
+    ).join(
+        KATEGORIEN, dkb_visa.Kategorie_id == KATEGORIEN.id
+    ).group_by(
+        KATEGORIEN.Kategorie_name
+    ).filter(
+        dkb_visa.Belegdatum.between(start_date, end_date)
+    ).all()
+    return data    
+
+
 def get_paginated_data(table_class, offset):
     return table_class.query.order_by(
         table_class.id.asc()
