@@ -22,11 +22,10 @@
 
     <div class="row">
         <div class="col-lg">
-            <canvas id="myPieChart" width="500" height="500"></canvas>
-        </div>
-
-        <div class="col-lg">
             <canvas id="monthlyExpensesChart" width="800" height="400"></canvas>
+        </div>
+        <div class="col-lg">
+            <canvas id="myPieChart" width="600" height="600"></canvas>
         </div>
     </div>
 
@@ -35,137 +34,155 @@
     document.addEventListener('DOMContentLoaded', function() {
         let pieChartInstance = null;
         let lineChartInstance = null;
-
-        // Set default dates
-        startDateInput = document.getElementById('start_date');
-        endDateInput = document.getElementById('end_date');
-
+    
+        const startDateInput = document.getElementById('start_date');
+        const endDateInput = document.getElementById('end_date');
+    
         const today = new Date();
         const currentDate = today.toISOString().split('T')[0];
         const defaultStartDate = '2024-01-01';
-
+    
         startDateInput.value = defaultStartDate;
         endDateInput.value = currentDate;
-
+    
+        const colors = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+            '#FF9F40', '#FF5733', '#9B59B6', '#3498DB', '#1ABC9C',
+            '#E74C3C', '#F1C40F', '#27AE60', '#34495E', '#7F8C8D',
+            '#FF00FF', '#800080', '#008080', '#808000', '#00FFFF',
+            '#DFFF00', '#FFBF00', '#FF7F50', '#DE3163', '#9FE2BF',
+            '#40E0D0', '#6495ED', '#CCCCFF', '#BADA55', '#FF4500'
+        ];
+    
         document.getElementById('dateRangeForm').addEventListener('submit', function(event) {
             event.preventDefault();
-            
-            const start_date = startDateInput.value;
-            const end_date = endDateInput.value;
-            
+            fetchChartData(startDateInput.value, endDateInput.value);
+        });
+    
+        document.getElementById('showMaxDateRangeData').addEventListener('click', fetchMaxDateRange);
+    
+        function fetchChartData(start_date, end_date) {
             fetch('/charts', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ start_date: start_date, end_date: end_date })
             })
             .then(response => response.json())
             .then(data => {
-                const colors = [
-                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
-                '#FF9F40', '#FF5733', '#9B59B6', '#3498DB', '#1ABC9C',
-                '#E74C3C', '#F1C40F', '#27AE60', '#34495E', '#7F8C8D',
-                '#FF00FF', '#800080', '#008080', '#808000', '#00FFFF',
-                '#DFFF00', '#FFBF00', '#FF7F50', '#DE3163', '#9FE2BF',
-                '#40E0D0', '#6495ED', '#CCCCFF', '#BADA55', '#FF4500'
-            ];
-
-                // Destroy existing pie chart instance if it exists
-                if (pieChartInstance) {
-                    pieChartInstance.destroy();
-                }
-
-                const ctx = document.getElementById('myPieChart').getContext('2d');
-                pieChartInstance = new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: data.pie_chart.labels,
-                        datasets: [{
-                            data: data.pie_chart.data,
-                            backgroundColor: colors,
-                            borderColor : colors
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins:{
-                            legend:{
-                                position: "right"
-                            }
-                        }
-                    },
-                });
-
-                if (lineChartInstance) {
-                    lineChartInstance.destroy();
-                }
-                // Render monthly expenses per category
-                const ctxLine = document.getElementById('monthlyExpensesChart').getContext('2d');
-                lineChartInstance = new Chart(ctxLine, {
-                    type: 'line',
-                    data: {
-                        labels: [],  // Labels will be updated dynamically
-                        datasets: [] // Datasets will be updated dynamically
-                    },
-                    options: {
-                        responsive: true,
-                        plugins:{
-                            legend:{
-                                position: "right"
-                            }
-                        }
-                    }
-                });
-
-                /// Update data for monthly expenses chart
-                const months = new Set();
-                const datasets = [];
-                let colorIndex = 0;
-                for (const category in data.monthly_expenses) {
-                    const expenses = data.monthly_expenses[category];
-                    const categoryData = {
-                        label: category,
-                        data: [],
-                        backgroundColor: colors[colorIndex ],
-                        borderColor: colors[colorIndex],
-                        fill: false
-                    };
-                    expenses.forEach(expense => {
-                        months.add(expense.month);
-                        categoryData.data.push({
-                            x: expense.month,
-                            y: expense.total_amount
-                        });
-                    });
-                    datasets.push(categoryData);
-                    colorIndex++;
-                }
-                lineChartInstance.data.labels = Array.from(months).sort();
-                lineChartInstance.data.datasets = datasets;
-                lineChartInstance.update();
+                renderPieChart(data.pie_chart);
+                renderLineChart(data.monthly_expenses);
             })
-            .catch(error => console.error('Error:', error));
-        });
-    });
-
-    document.getElementById('showMaxDateRangeData').addEventListener('click', function() {
-        fetch('/max_date_range')
+            .catch(error => console.error('Error fetching chart data:', error));
+        }
+    
+        function fetchMaxDateRange() {
+            fetch('/max_date_range')
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
                     console.error(data.error);
                 } else {
-                    console.log("min date" + data.min_date)
-                    console.log("max date" + data.max_date)
                     startDateInput.value = data.min_date;
                     endDateInput.value = data.max_date;
-
-                    // Trigger form submission to fetch and display data for the max date range
                     document.getElementById('dateRangeForm').dispatchEvent(new Event('submit'));
                 }
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => console.error('Error fetching max date range:', error));
+        }
+    
+        function renderPieChart(data) {
+            if (pieChartInstance) {
+                pieChartInstance.destroy();
+            }
+            
+            const ctx = document.getElementById('myPieChart').getContext('2d');
+            pieChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        data: data.data,
+                        backgroundColor: colors,
+                        borderColor: colors
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    plugins: {
+                        legend: { position: "right" }
+                    }
+                },
+            });
+        }
+    
+        function renderLineChart(data) {
+            if (lineChartInstance) {
+                lineChartInstance.destroy();
+            }
+    
+            const ctxLine = document.getElementById('monthlyExpensesChart').getContext('2d');
+            lineChartInstance = new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: [], // Labels will be updated dynamically
+                    datasets: [] // Datasets will be updated dynamically
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { 
+                            position: "right" }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Total Amount'
+                            }
+                        }
+                    }
+                }
+            });
+    
+            const months = new Set();
+            const datasets = [];
+            let colorIndex = 0;
+    
+            for (const category in data) {
+                const expenses = data[category];
+                const categoryData = {
+                    label: category,
+                    data: [],
+                    backgroundColor: colors[colorIndex % colors.length],
+                    borderColor: colors[colorIndex % colors.length],
+                    fill: false,
+                    cubicInterpolationMode: 'monotone', // Enable interpolation
+                    tension: 0.4 // Tension for smoothing the lines
+                };
+                
+                expenses.forEach(expense => {
+                    months.add(expense.month);
+                    categoryData.data.push({
+                        x: expense.month,
+                        y: expense.total_amount
+                    });
+                });
+    
+                datasets.push(categoryData);
+                colorIndex++;
+            }
+    
+            lineChartInstance.data.labels = Array.from(months).sort();
+            lineChartInstance.data.datasets = datasets;
+            lineChartInstance.update();
+        }
     });
+    
 </script>
 {% endblock %}

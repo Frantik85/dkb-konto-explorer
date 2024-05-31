@@ -2,7 +2,7 @@
 
 {% block content %}
 <h1>DKB Data</h1>
-<table  class="table table-dark">
+<table  class="table table-dark table-hover table-striped">
     {% if active_tab == 'dkb_visa' %}
     <thead>
         <tr>
@@ -14,7 +14,24 @@
             <th class="text-primary">Umsatztyp</th>
             <th class="text-primary">Betrag</th>
             <th class="text-primary">Fremdwährungsbetrag</th>
-            <th class="text-primary">Kategorie</th>
+            <th class="text-primary">Kategorie 
+                <form id="filterForm" action={{url_for('data.filter_data')}} method="post">
+                    <input type="hidden" name="active_tab" value="{{ active_tab }}">
+                    <select class="selectpicker" name="category" multiple style="width: auto" data-actions-box="true" data-live-search="true">
+                        {% set selected_categories = selected_categories | default([]) %}
+                        {%if selected_categories %}
+                            {% for category in categories %}
+                                <option value="{{ category.id }}" {% if category.id|string in selected_categories %} selected="selected" {%endif%}>{{ category.Kategorie_name }}</option>
+                            {% endfor %}
+                        {%else%}
+                            {% for category in categories %}
+                                <option value="{{ category.id }}" selected="selected">{{ category.Kategorie_name }}</option>
+                            {% endfor %}
+                        {%endif%}
+                    </select>
+                    <button type="submit" class="btn btn-warning me-2">Filtern</button>
+                </form>
+            </th>
             </tr>
     </thead>
     <tbody>
@@ -34,20 +51,34 @@
     {% if active_tab == 'dkb_konto' %}
     <thead>
         <tr>
-            <th>Kontonummer</th>
-            <th>Kontoinhaber</th>
-            <th>Buchungsdatum</th>
-            <th>Wertstellung</th>
-            <th>Zahlungspflichtiger</th>
-            <th>Zahlungsempfänger</th>
-            <th>Verwendungszweck</th>
-            <th>Umsatztyp</th>
-            <th>IBAN</th>
-            <th>Betrag</th>
-            <th>Gläubiger_ID</th>
-            <th>Mandatsreferenz</th>
-            <th>Kundenreferenz</th>
-            <th>Kategorie_id</th>
+            <th class="text-primary">Kontonummer</th>
+            <th class="text-primary">Kontoinhaber</th>
+            <th class="text-primary">Buchungsdatum</th>
+            <th class="text-primary">Wertstellung</th>
+            <th class="text-primary">Zahlungspflichtiger</th>
+            <th class="text-primary">Zahlungsempfänger</th>
+            <th class="text-primary">Verwendungszweck</th>
+            <th class="text-primary">Umsatztyp</th>
+            <th class="text-primary">IBAN</th>
+            <th class="text-primary">Betrag</th>
+            <th class="text-primary" style="min-width:150px">Kategorie
+                <form id="filterForm" action={{url_for('data.filter_data')}} method="post">
+                    <input type="hidden" name="active_tab" value="{{ active_tab }}">
+                    <select class="selectpicker" name="category" multiple style="width: auto" data-actions-box="true" data-live-search="true">
+                        {% set selected_categories = selected_categories | default([]) %}
+                        {%if selected_categories %}
+                            {% for category in categories %}
+                                <option value="{{ category.id }}" {% if category.id|string in selected_categories %} selected="selected" {%endif%}>{{ category.Kategorie_name }}</option>
+                            {% endfor %}
+                        {%else%}
+                            {% for category in categories %}
+                                <option value="{{ category.id }}" selected="selected">{{ category.Kategorie_name }}</option>
+                            {% endfor %}
+                        {%endif%}
+                    </select>
+                    <button type="submit" class="btn btn-warning me-2">Filtern</button>
+                </form>
+            </th>
             </tr>
     </thead>
     <tbody>
@@ -62,10 +93,7 @@
             <td>{{ row.Umsatztyp }}</td>
             <td>{{ row.IBAN }}</td>
             <td>{{ row.Betrag }}</td>
-            <td>{{ row.Gläubiger_ID }}</td>
-            <td>{{ row.Mandatsreferenz }}</td>
-            <td>{{ row.Kundenreferenz }}</td>
-            <td>{{ row.Kategorie_id }}</td>
+            <td>{{ row.Kategorie_name }}</td>
             </tr>
         {% endfor %}
     {% endif %}
@@ -93,6 +121,11 @@ function loadMoreData() {
     // Use the offset value from the button or a hidden field to determine the next data chunk
     // Update the table with the new data and adjust the button visibility or offset value
 }
+$(document).ready(function() {
+    $('.selectpicker').on('hidden.bs.select', function (e) {
+        $('#filterForm').submit();
+    });
+});
 </script>
 
 {% endblock %}
