@@ -22,9 +22,11 @@
 
     <div class="row">
         <div class="col-lg">
+            <button id="toggle_monthly_linechart">Show/Hide All</button>
             <canvas id="monthlyExpensesChart" width="800" height="400"></canvas>
         </div>
         <div class="col-lg">
+            <button id="toggle_monthly_piechart">show/hide all</button>
             <canvas id="myPieChart" width="600" height="600"></canvas>
         </div>
     </div>
@@ -122,7 +124,7 @@
     
             const ctxLine = document.getElementById('monthlyExpensesChart').getContext('2d');
             lineChartInstance = new Chart(ctxLine, {
-                type: 'line',
+                type: 'bar',
                 data: {
                     labels: [], // Labels will be updated dynamically
                     datasets: [] // Datasets will be updated dynamically
@@ -182,6 +184,22 @@
             lineChartInstance.data.datasets = datasets;
             lineChartInstance.update();
         }
+
+        // Toggle visibility of pie chart datasets
+        document.getElementById('toggle_monthly_piechart').addEventListener('click', function() {
+            pieChartInstance.data.datasets.forEach(function(ds) {
+                ds.hidden = !ds.hidden;
+            });
+            pieChartInstance.update();
+        });
+
+        // Assuming you also want to toggle the line chart visibility
+        document.getElementById('toggle_monthly_linechart').addEventListener('click', function() {
+            lineChartInstance.data.datasets.forEach(function(ds) {
+                ds.hidden = !ds.hidden;
+            });
+            lineChartInstance.update();
+        });
     });
     
 </script>
