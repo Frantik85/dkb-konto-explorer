@@ -2,8 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, jsonif
 from ..models import dkb_visa, dkb_konto, KATEGORIEN, kategorie_schlagwoerter
 from .. import db
 from sqlalchemy import func
-from ..utils import get_paginated_data, \
-                    get_paginated_visa_data, \
+from ..utils import get_paginated_visa_data, \
                     get_paginated_konto_data, \
                     get_unique_non_categorized_data, \
                     get_all_categories, \
@@ -271,9 +270,20 @@ def view_chart():
         
         # Prepare data for monthly expenses per category
         monthly_expenses = {}
-        categories = get_all_categories()  # Assuming you have a function to fetch all categories
-        for category in categories:
-            category_expenses = db.session.query(
+        calculate_monthly_expenses_per_category_2(start_date, end_date, monthly_expenses, [dkb_visa, dkb_konto])
+        
+        return jsonify({
+            'pie_chart': {'labels': labels, 'data': data},
+            'monthly_expenses': monthly_expenses
+        })
+
+    return render_template('charts.html')
+
+
+def calculate_monthly_expenses_per_category(start_date, end_date, monthly_expenses):
+    categories = get_all_categories()  # Assuming you have a function to fetch all categories
+    for category in categories:
+        category_expenses = db.session.query(
                 func.strftime('%Y-%m', dkb_visa.Belegdatum).label('month'),
                 func.sum(dkb_visa.Betrag).label('total_amount')
             ).join(
@@ -285,20 +295,57 @@ def view_chart():
                 func.strftime('%Y-%m', dkb_visa.Belegdatum)
             ).all()
             
-            if category_expenses != []:
-                monthly_expenses[category.Kategorie_name] = category_expenses
+        if category_expenses != []:
+            monthly_expenses[category.Kategorie_name] = category_expenses
 
-                monthly_expenses[category.Kategorie_name] = [
+            monthly_expenses[category.Kategorie_name] = [
                         {'month': expense.month, 'total_amount': expense.total_amount}
                         for expense in category_expenses
                     ]
-        
-        return jsonify({
-            'pie_chart': {'labels': labels, 'data': data},
-            'monthly_expenses': monthly_expenses
-        })
+    return monthly_expenses
 
-    return render_template('charts.html')
+
+def calculate_monthly_expenses_per_category_2(start_date, end_date, monthly_expenses, tables):
+    categories = get_all_categories()  # Assuming you have a function to fetch all categories
+    for table in tables:
+        for category in categories:
+            category_expenses = db.session.query(
+                func.strftime('%Y-%m', table.Wertstellung).label('month'),
+                func.sum(table.Betrag).label('total_amount')
+            ).join(
+                KATEGORIEN, table.Kategorie_id == KATEGORIEN.id
+            ).filter(
+                KATEGORIEN.id == category.id,
+                table.Wertstellung.between(start_date, end_date)
+            ).group_by(
+                func.strftime('%Y-%m', table.Wertstellung)
+            ).all()
+            
+            if category_expenses != []:
+                if category.Kategorie_name not in monthly_expenses:
+                    monthly_expenses[category.Kategorie_name] = []
+
+                monthly_expenses[category.Kategorie_name].extend([
+                    {'month': expense.month, 'total_amount': expense.total_amount}
+                    for expense in category_expenses
+                ])
+
+    # Aggregate the expenses per month per category
+    for category, expenses in monthly_expenses.items():
+        expenses_by_month = {}
+        for expense in expenses:
+            if expense['month'] in expenses_by_month:
+                expenses_by_month[expense['month']] += expense['total_amount']
+            else:
+                expenses_by_month[expense['month']] = expense['total_amount']
+        
+        sorted_expenses = sorted(expenses_by_month.items())
+        monthly_expenses[category] = [
+            {'month': month, 'total_amount': total_amount}
+            for month, total_amount in sorted_expenses
+        ]
+
+    return monthly_expenses
 
 
 @charts_bp.route('/max_date_range', methods=['GET'])
@@ -311,6 +358,17 @@ def get_max_date_range():
     else:
         return jsonify({'error': 'No data available'}), 404
    
+
+@charts_bp.route('/fetch_bar_chart_data', methods=['GET'])
+def fetch_bar_chart_data():
+    max_date = db.session.query(func.max(dkb_visa.Belegdatum)).scalar()
+    min_date = db.session.query(func.min(dkb_visa.Belegdatum)).scalar()
+    
+    if max_date and min_date:
+        return jsonify({'min_date': min_date, 'max_date': max_date})
+    else:
+        return jsonify({'error': 'No data available'}), 404
+
     
 @charts_bp.route('/edit_keywords_and_categories', methods=['GET'])
 def edit_keywords_and_categories():
